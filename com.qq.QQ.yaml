@@ -2,6 +2,8 @@ app-id: com.qq.QQ
 runtime: org.freedesktop.Platform
 runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
 base: org.electronjs.Electron2.BaseApp
 base-version: '25.08'
 command: qq
@@ -75,6 +77,20 @@ modules:
       - type: file
         path: patch/rename.cpp
 
+  - name: clipboard-sync
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/rust-stable/bin
+    build-commands:
+      - cargo build --release
+      - install -Dm755 target/release/clipboard-sync -t $FLATPAK_DEST/bin/
+    sources:
+      - type: git
+        url: https://github.com/dnut/clipboard-sync.git
+        tag: 0.2.0
+        x-checker-data:
+          type: git
+
   - name: fontconfig
     buildsystem: simple
     build-commands:
@@ -115,6 +131,8 @@ modules:
               echo "Adding default flags..."
               FLAGS+=(--ozone-platform-hint=auto --enable-wayland-ime --wayland-text-input-version=3)
             fi
+          - echo "Starting clipboard sync service..."
+          - clipboard-sync&
           - echo "Pass \`${FLAGS[*]}\` to main process..."
           - |
             if [ -z "$(ls -A /tmp/.X11-unix 2>/dev/null)" ] && [ -n "$WAYLAND_DISPLAY" ]; then
